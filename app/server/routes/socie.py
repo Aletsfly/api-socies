@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, HTTPException, status, Depends
 from fastapi.encoders import jsonable_encoder
 
 
@@ -18,6 +18,16 @@ from server.models.socie import (
 
 router = APIRouter()
 
+# Función de dependencia para validar la existencia de un socio
+async def get_socie_or_404(id: str):
+    socie_found = await retrieve_socie(id)
+    if not socie_found:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Socio con id {id} no existe",
+        )
+    return socie_found
+
 # Add a new Socie
 @router.post("/", response_description="Datos de socie agregados ala base de datos")
 async def add_socie_data(socie: SchemaDeSocie = Body(...)):
@@ -35,20 +45,21 @@ async def get_socies():
 
 # Retrieve a socie with a matching ID
 @router.get("/{id}", response_description="Dato se socieo recuperado")
-async def get_socie_data(id):
-    socie = await retrieve_socie(id)
-    if socie:
-        return ResponseModel(socie, "Se consiguieron los datos del Socie")
-    return ErrorResponseModel("Ocurrió un error", 404, "El socie no existe.")
+async def get_socie_data(socie: dict = Depends(get_socie_or_404)):
+    return ResponseModel(socie, "Se consiguieron los datos del Socie")
 
 # Update a socie with a matching ID
 @router.put("/{id}")
-async def update_socie_data(id: str, req: UpdateSocieModel = Body(...)):
+async def update_socie_data(
+    id: str,
+    req: UpdateSocieModel = Body(...),
+    socie_found: dict = Depends(get_socie_or_404),
+):
     req = {k: v for k, v in req.dict().items() if v is not None}
     updated_socie = await update_socie(id, req)
     if updated_socie:
         return ResponseModel(
-            "Se pudo actualizar el Socie con el ID: {} ".format(id), "Socio Actualizado correctamente"
+            f"Se pudo actualizar el Socie con el ID: {id} ", "Socio Actualizado correctamente"
         )
     return ErrorResponseModel(
         "Ocurrió un error",
@@ -58,12 +69,15 @@ async def update_socie_data(id: str, req: UpdateSocieModel = Body(...)):
 
 # Delete a socie with a matching ID
 @router.delete("/{id}", response_description="Socie data deleted from the database")
-async def delete_socie_data(id: str):
+async def delete_socie_data(
+    id: str,
+    socie_found: dict = Depends(get_socie_or_404),
+):
     deleted_socie = await delete_socie(id)
     if deleted_socie:
         return ResponseModel(
-            "Socie ID: {} borrado".format(id), "Socio Borrado exitosamente"
+            f"Socie ID: {id} borrado", "Socio Borrado exitosamente"
         )
     return ErrorResponseModel(
-        "Hubo un error", 404, "Socio con id {0} no existe".format(id)
+        "Hubo un error", 404, f"Socio con id {id} no existe"
     )

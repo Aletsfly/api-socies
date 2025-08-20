@@ -45,25 +45,20 @@ async def retrieve_socie(id: str) -> dict:
     socie = await socie_collection.find_one({"_id": ObjectId(id)})
     if socie:
         return socie_helper(socie)
+    return None
 
 
-# Actulizar un socie a partir de un ID
+# Actualizar un socie a partir de un ID
 async def update_socie(id: str, data: dict):
     # Devuelve falso si el cuerpo del request está vacio
     if len(data) < 1:
         return False
-    socie = await socie_collection.find_one({"_id": ObjectId(id)})
-    if socie:
-        updated_socie = await socie_collection.update_one(
-            {"_id": ObjectId(id)}, {"$set": data}
-        )
-        if updated_socie:
-            return True
-        return False
+    updated_socie = await socie_collection.update_one(
+        {"_id": ObjectId(id)}, {"$set": data}
+    )
+    return updated_socie.modified_count > 0
 
 # Borrar un socie de la base de datos
 async def delete_socie(id: str):
-    socie = await socie_collection.find_one({"_id": ObjectId(id)})
-    if socie:
-        await socie_collection.delete_one({"_id": ObjectId(id)})
-        return True
+    deleted_socie = await socie_collection.delete_one({"_id": ObjectId(id)})
+    return deleted_socie.deleted_count > 0
