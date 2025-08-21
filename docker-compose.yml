@@ -8,7 +8,8 @@ services:
     ports:
       - '8000:8000'
     environment:
-      - DB_URL=mongodb://db/myTestDB
+      # Usamos el usuario con permisos de escritura
+      - DB_URL=mongodb://socies_admin:socies_password@db/myTestDB
     depends_on:
       - db
   db:
@@ -17,7 +18,11 @@ services:
       - 27017:27017
     volumes:
       - taskdb:/data/db
-
+      - ./app/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro # Montamos el script
+    environment:
+      # Las variables para el usuario root no son necesarias si usamos un script
+      - MONGO_INITDB_DATABASE=myTestDB
+    command: ["--auth"] # ¡Este comando es el que faltaba!
 
 volumes:
     taskdb:

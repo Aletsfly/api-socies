@@ -5,7 +5,7 @@ from bson.objectid import ObjectId
 
 client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["DB_URL"])
 
-database = client.socies
+database = client.myTestDB  # Cambia "myTestDB" por el nombre de tu base de datos
 
 socie_collection = database.get_collection("socies_collections")
 
